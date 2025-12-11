@@ -1,0 +1,35 @@
+{
+  "templatePptx": "samples/template_single.pptx",
+  "outputPptx": "output_slides_from_json.pptx",
+  "slideIndex": 0,
+  "placeholders": {
+    "title": {
+      "name": "Title",
+      "type": "text",
+      "isTitle": true,
+      "maxFontSize": 36,
+      "value": "NYCタクシー 月次乗車数の推移からの示唆"
+    },
+    "graphImage": {
+      "name": "GraphImage",
+      "type": "image",
+      "value": "samples/images/graph.png"
+    },
+    "insights": {
+      "name": "Insights",
+      "type": "list",
+      "maxFontSize": 24,
+      "value": [
+        "長期減少トレンド：パンデミック以前から右肩下がり、アプリ配車 (Uber/Lyft等) への需要シフトが背景",
+        "2020年春の急落と低位推移：外出制限・観光蒸発・在宅勤務定着で乗車数が急減後、低位で横ばい",
+        "季節性の弱まり：繁忙期の波が縮小。公共交通・マイクロモビリティ・配車プラットフォームへの分散が影響"
+      ]
+    },
+    "note": {
+      "name": "Note",
+      "type": "text",
+      "maxFontSize": 24,
+      "value": "参考：FHV利用件数、地下鉄/バス乗車数、観光統計、オフィス出社率など外部指標と併用すると因果関係の整理が可能。"
+    }
+  }
+}
