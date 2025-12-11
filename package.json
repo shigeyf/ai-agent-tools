@@ -13,7 +13,8 @@
     "commit": "git-cz",
     "prettier:check": "prettier --check .",
     "prettier:fix": "prettier --write .",
-    "prettier:lint-staged": "prettier --write"
+    "prettier:lint-staged": "prettier --write",
+    "ruff:lint-staged": "ruff check --fix"
   },
   "config": {
     "commitizen": {

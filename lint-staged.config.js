@@ -20,7 +20,7 @@ const config = {
   // [JSON]
   '**/*.json': (filenames) => filenames.map((filename) => `npm run prettier:lint-staged '${filename}'`),
   // [Python]
-  '**/*.py': (filenames) => filenames.map((filename) => `npm run prettier:lint-staged '${filename}'`),
+  '**/*.py': (filenames) => filenames.map((filename) => `npm run ruff:lint-staged '${filename}'`),
   // [YAML]
   //'**/*.{yaml,yml}': (filenames) => filenames.map((filename) => `npm run prettier:lint-staged '${filename}'`),
   // [Terraform]
