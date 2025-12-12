@@ -11,8 +11,8 @@ for font inheritance and theme font resolution.
 
 from typing import Any, Dict, Literal, Optional, TypedDict
 
-from lxml import etree  # type: ignore[import-untyped]
-from pptx.opc.constants import RELATIONSHIP_TYPE as RT  # type: ignore[import-untyped]
+from lxml import etree
+from pptx.opc.constants import RELATIONSHIP_TYPE as RT
 from pptx.oxml.ns import qn
 
 
@@ -22,9 +22,9 @@ _DRAWINGML_NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main"}
 # Line spacing type constants
 # Per ISO/IEC 29500-1 §21.1.2.2.5 (lnSpc - Line Spacing):
 # "This can be specified in two different ways, percentage spacing and font point spacing."
-LINE_SPACING_TYPE_RATIO = 'ratio'       # spcPct: percentage-based spacing (§21.1.2.2.11)
-LINE_SPACING_TYPE_FIXED = 'fixed_pt'    # spcPts: fixed point spacing (§21.1.2.2.12)
-LINE_SPACING_TYPE_DEFAULT = 'default'   # No explicit line spacing set
+LINE_SPACING_TYPE_RATIO = "ratio"  # spcPct: percentage-based spacing (§21.1.2.2.11)
+LINE_SPACING_TYPE_FIXED = "fixed_pt"  # spcPts: fixed point spacing (§21.1.2.2.12)
+LINE_SPACING_TYPE_DEFAULT = "default"  # No explicit line spacing set
 
 
 # ---------------------------
@@ -283,7 +283,7 @@ def get_shape_font(
 #     "If this element is omitted then the spacing between two lines of text
 #     should be determined by the point size of the largest piece of text within a line."
 #     https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.drawing.linespacing
-LineSpacingType = Literal['ratio', 'fixed_pt', 'default']
+LineSpacingType = Literal["ratio", "fixed_pt", "default"]
 
 
 class ParagraphDefaults(TypedDict):
@@ -359,14 +359,14 @@ def get_placeholder_paragraph_defaults(shape: Any) -> ParagraphDefaults:
             - space_after_pt: Space after paragraph in points (0.0 if not set).
     """
     result: ParagraphDefaults = {
-        'line_spacing': None,
-        'line_spacing_type': LINE_SPACING_TYPE_DEFAULT,
-        'space_before_pt': 0.0,
-        'space_after_pt': 0.0,
+        "line_spacing": None,
+        "line_spacing_type": LINE_SPACING_TYPE_DEFAULT,
+        "space_before_pt": 0.0,
+        "space_after_pt": 0.0,
     }
 
     # Check if shape has placeholder format
-    if not hasattr(shape, 'placeholder_format') or shape.placeholder_format is None:
+    if not hasattr(shape, "placeholder_format") or shape.placeholder_format is None:
         return result
 
     # Get the slide layout
@@ -387,16 +387,18 @@ def get_placeholder_paragraph_defaults(shape: Any) -> ParagraphDefaults:
     # Access txBody and lstStyle
     # Note: _element access is required for XML parsing, python-pptx doesn't expose this
     # Variable names reflect XML element names but use snake_case
-    tx_body = layout_shape._element.find(qn('p:txBody'))  # pylint: disable=protected-access
+    tx_body = layout_shape._element.find(
+        qn("p:txBody")
+    )  # pylint: disable=protected-access
     if tx_body is None:
         return result
 
-    lst_style = tx_body.find(qn('a:lstStyle'))
+    lst_style = tx_body.find(qn("a:lstStyle"))
     if lst_style is None:
         return result
 
     # Get lvl1pPr (level 1 = bullet level 0)
-    lvl1_ppr = lst_style.find(qn('a:lvl1pPr'))
+    lvl1_ppr = lst_style.find(qn("a:lvl1pPr"))
     if lvl1_ppr is None:
         return result
 
@@ -404,46 +406,50 @@ def get_placeholder_paragraph_defaults(shape: Any) -> ParagraphDefaults:
     # Per ISO/IEC 29500-1 §21.1.2.2.5:
     # "This element specifies the vertical line spacing... This can be specified
     # in two different ways, percentage spacing and font point spacing."
-    ln_spc = lvl1_ppr.find(qn('a:lnSpc'))
+    ln_spc = lvl1_ppr.find(qn("a:lnSpc"))
     if ln_spc is not None:
         # Check for percentage-based spacing (spcPct)
         # Per ISO/IEC 29500-1 §21.1.2.2.11: value is in 1/100000 of a percent
         # Example: 100000 = 100% = single spacing
-        spc_pct = ln_spc.find(qn('a:spcPct'))
+        spc_pct = ln_spc.find(qn("a:spcPct"))
         # Check for fixed point spacing (spcPts)
         # Per ISO/IEC 29500-1 §21.1.2.2.12: value is in 1/100 of a point
         # Example: 1400 = 14 points
-        spc_pts = ln_spc.find(qn('a:spcPts'))
+        spc_pts = ln_spc.find(qn("a:spcPts"))
         if spc_pct is not None:
             # Convert from 1/100000 percent to ratio (100000 -> 1.0)
-            result['line_spacing'] = int(spc_pct.get('val')) / 100000
-            result['line_spacing_type'] = LINE_SPACING_TYPE_RATIO
+            result["line_spacing"] = int(spc_pct.get("val")) / 100000
+            result["line_spacing_type"] = LINE_SPACING_TYPE_RATIO
         elif spc_pts is not None:
             # Convert from 1/100 points to points (1400 -> 14.0)
             # This value represents the total line height, not additional spacing
-            result['line_spacing'] = int(spc_pts.get('val')) / 100
-            result['line_spacing_type'] = LINE_SPACING_TYPE_FIXED
+            result["line_spacing"] = int(spc_pts.get("val")) / 100
+            result["line_spacing_type"] = LINE_SPACING_TYPE_FIXED
 
     # Extract space before (spcBef)
     # Note: Only spcPts (fixed points) is supported. spcPct (percentage) is not implemented
     # because it requires font size context which is not available at this stage.
-    spc_bef = lvl1_ppr.find(qn('a:spcBef'))
+    spc_bef = lvl1_ppr.find(qn("a:spcBef"))
     if spc_bef is not None:
-        spc_pts = spc_bef.find(qn('a:spcPts'))
+        spc_pts = spc_bef.find(qn("a:spcPts"))
         if spc_pts is not None:
-            result['space_before_pt'] = int(spc_pts.get('val')) / 100
-        elif spc_bef.find(qn('a:spcPct')) is not None:
-            print("[WARN] spcBef with spcPct (percentage) is not supported; using default (0.0)")
+            result["space_before_pt"] = int(spc_pts.get("val")) / 100
+        elif spc_bef.find(qn("a:spcPct")) is not None:
+            print(
+                "[WARN] spcBef with spcPct (percentage) is not supported; using default (0.0)"
+            )
 
     # Extract space after (spcAft)
     # Note: Only spcPts (fixed points) is supported. spcPct (percentage) is not implemented
     # because it requires font size context which is not available at this stage.
-    spc_aft = lvl1_ppr.find(qn('a:spcAft'))
+    spc_aft = lvl1_ppr.find(qn("a:spcAft"))
     if spc_aft is not None:
-        spc_pts = spc_aft.find(qn('a:spcPts'))
+        spc_pts = spc_aft.find(qn("a:spcPts"))
         if spc_pts is not None:
-            result['space_after_pt'] = int(spc_pts.get('val')) / 100
-        elif spc_aft.find(qn('a:spcPct')) is not None:
-            print("[WARN] spcAft with spcPct (percentage) is not supported; using default (0.0)")
+            result["space_after_pt"] = int(spc_pts.get("val")) / 100
+        elif spc_aft.find(qn("a:spcPct")) is not None:
+            print(
+                "[WARN] spcAft with spcPct (percentage) is not supported; using default (0.0)"
+            )
 
     return result

@@ -35,12 +35,15 @@ A Python tool to fill JSON data into PowerPoint slide placeholders. Supports tex
 
 ## Requirements
 
-- Python 3.x
+- Python 3.8+
 - Dependencies listed in [requirements.txt](requirements.txt):
-  - `python-pptx==0.6.23`
-  - `Pillow>=10.0.0`
-  - `lxml>=4.9.3`
-  - `fonttools>=4.0.0`
+  - `python-pptx>=1.0.2` - PowerPoint file manipulation with type annotations
+  - `Pillow>=10.0.0` - Image processing
+  - `lxml>=4.9.3` - XML processing
+  - `lxml-stubs>=0.5.1` - Type stubs for lxml
+  - `fonttools>=4.0.0` - Font file parsing
+  - `XlsxWriter>=0.5.7` - Required by python-pptx 1.0+
+  - `typing_extensions>=4.9.0` - Required by python-pptx 1.0+
 
 ## Installation
 
