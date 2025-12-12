@@ -1,6 +1,7 @@
 {
   "templatePptx": "samples/template_single.pptx",
   "outputPptx": "output_slides_from_json.pptx",
+  "fontDir": "samples/fonts",
   "slideIndex": 0,
   "placeholders": {
     "title": {
