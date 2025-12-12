@@ -132,7 +132,9 @@ def initialize_font_system(font_dir: str) -> None:
 
     # Skip if already initialized
     if _dynamic_font_name_to_file:
-        print(f"[INFO] Font system already initialized ({len(_dynamic_font_name_to_file)} entries)")
+        print(
+            f"[INFO] Font system already initialized ({len(_dynamic_font_name_to_file)} entries)"
+        )
         return
 
     # Build and cache the mapping
@@ -197,11 +199,15 @@ def _build_font_name_mapping(font_dir: str) -> Dict[str, List[str]]:
                         if filename not in family_to_files[key_full]:
                             family_to_files[key_full].append(filename)
 
-        print(f"[INFO] Built font name and file mapping: {len(family_to_files)} entries")
+        print(
+            f"[INFO] Built font name and file mapping: {len(family_to_files)} entries"
+        )
 
     except Exception as e:  # pylint: disable=broad-except
         # Catch any unexpected errors during font name extraction loop
-        print(f"[WARN] Unexpected error while scanning font directory '{font_dir}': {e}")
+        print(
+            f"[WARN] Unexpected error while scanning font directory '{font_dir}': {e}"
+        )
 
     return family_to_files
 
@@ -279,7 +285,10 @@ def clear_font_cache() -> None:
     mapping_count = len(_dynamic_font_name_to_file)
     _font_cache.clear()
     _dynamic_font_name_to_file.clear()
-    print(f"[INFO] Cleared font cache: {font_cache_count} font objects, {mapping_count} mapping entries")
+    print(
+        f"[INFO] Cleared font cache: {font_cache_count} font objects,"
+        f"{mapping_count} mapping entries"
+    )
 
 
 # ---------------------------
@@ -381,7 +390,9 @@ def find_font_file(font_name: str, font_dir: str) -> Optional[str]:
                     .replace(".otf", "")
                 )
                 if name_parts in file_parts or file_parts in name_parts:
-                    print(f"[DEBUG] Font '{font_name}' matched by filename heuristic: {filename}")
+                    print(
+                        f"[DEBUG] Font '{font_name}' matched by filename heuristic: {filename}"
+                    )
                     return os.path.join(font_dir, filename)
     except OSError as e:
         # Directory access errors during fallback search (non-critical)

@@ -387,9 +387,8 @@ def get_placeholder_paragraph_defaults(shape: Any) -> ParagraphDefaults:
     # Access txBody and lstStyle
     # Note: _element access is required for XML parsing, python-pptx doesn't expose this
     # Variable names reflect XML element names but use snake_case
-    tx_body = layout_shape._element.find(
-        qn("p:txBody")
-    )  # pylint: disable=protected-access
+    # pylint: disable=protected-access
+    tx_body = layout_shape._element.find(qn("p:txBody"))
     if tx_body is None:
         return result
 
