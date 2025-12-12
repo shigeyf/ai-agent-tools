@@ -8,6 +8,30 @@ A Python tool to fill JSON data into PowerPoint slide placeholders. Supports tex
 - **Image Placeholders**: Insert images while maintaining aspect ratio and centering within the frame
 - **List Placeholders**: Create bulleted lists with bold labels (text before colon) and normal body text
 - **Flexible Configuration**: Control font sizes and title formatting via JSON
+- **Precise Font Size Calculation**: Calculate optimal font sizes using actual font metrics with Pillow and fontTools
+- **Multi-byte Character Support**: Proper text measurement for CJK (Chinese, Japanese, Korean) and other multi-byte character sets (requires consistent language per placeholder)
+- **Theme Font Resolution**: Automatically resolve PowerPoint theme fonts (major/minor, Latin/East Asian)
+
+## Table of Contents
+
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+- [JSON Specification](#json-specification)
+  - [JSON Fields](#json-fields)
+  - [Placeholder Properties](#placeholder-properties)
+  - [Placeholder Types](#placeholder-types)
+- [Sample Input](#sample-input)
+  - [Sample with Font Directory](#sample-with-font-directory)
+- [How It Works](#how-it-works)
+- [How to Name Shapes in PowerPoint](#how-to-name-shapes-in-powerpoint)
+- [Notes](#notes)
+- [Known Limitations](#known-limitations)
+  - [Text Overflow and fit_text() Issues](#text-overflow-and-fit_text-issues)
+  - [Solution: Font Directory (fontDir)](#solution-font-directory-fontdir)
+  - [Multi-Language Limitations](#multi-language-limitations)
+- [License](#license)
 
 ## Requirements
 
@@ -16,6 +40,7 @@ A Python tool to fill JSON data into PowerPoint slide placeholders. Supports tex
   - `python-pptx==0.6.23`
   - `Pillow>=10.0.0`
   - `lxml>=4.9.3`
+  - `fonttools>=4.0.0`
 
 ## Installation
 
@@ -67,6 +92,7 @@ The input JSON file should follow this structure:
 {
   "templatePptx": "path/to/template.pptx",
   "outputPptx": "path/to/output.pptx",
+  "fontDir": "path/to/fonts",
   "slideIndex": 0,
   "placeholders": {
     "placeholder_key": {
@@ -82,12 +108,13 @@ The input JSON file should follow this structure:
 
 ### JSON Fields
 
-| Field          | Type    | Required | Description                                   |
-| -------------- | ------- | -------- | --------------------------------------------- |
-| `templatePptx` | string  | Yes      | Path to the PowerPoint template file          |
-| `outputPptx`   | string  | No       | Output file path (default: `output.pptx`)     |
-| `slideIndex`   | integer | No       | Zero-based slide index to fill (default: `0`) |
-| `placeholders` | object  | Yes      | Dictionary of placeholder configurations      |
+| Field          | Type    | Required | Description                                                                |
+| -------------- | ------- | -------- | -------------------------------------------------------------------------- |
+| `templatePptx` | string  | Yes      | Path to the PowerPoint template file                                       |
+| `outputPptx`   | string  | No       | Output file path (default: `output.pptx`)                                  |
+| `fontDir`      | string  | No       | Directory containing font files (TTF/TTC/OTF) for precise text measurement |
+| `slideIndex`   | integer | No       | Zero-based slide index to fill (default: `0`)                              |
+| `placeholders` | object  | Yes      | Dictionary of placeholder configurations                                   |
 
 ### Placeholder Properties
 
@@ -138,7 +165,9 @@ List items can include labels (text before `:` or `：`) which will be rendered 
 
 ## Sample Input
 
-See [samples/input.json](samples/input.json) for a complete example:
+See [samples/input.json](samples/input.json) for a basic example without font size calculation:
+
+> **Note:** This example does not include `fontDir`, so **no font size calculation or adjustment is performed by this tool**. The `MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE` property flag is set, but text may overflow the shape boundaries. To manually trigger font size adjustment in PowerPoint, click on the auto-fit options icon (appears at bottom-left of the shape when text overflows) and select **"AutoFit Text to Placeholder"**. For reliable automated text fitting without manual intervention, use `fontDir` to enable precise font size calculation.
 
 ```json
 {
@@ -178,16 +207,62 @@ See [samples/input.json](samples/input.json) for a complete example:
 }
 ```
 
+### Sample with Font Directory
+
+For precise font size calculation with multi-byte characters (Japanese, Chinese, etc.), use `fontDir` to specify a directory containing font files. See [samples/input-with-fonts.json](samples/input-with-fonts.json):
+
+```json
+{
+  "templatePptx": "samples/template_single.pptx",
+  "outputPptx": "output_slides_from_json.pptx",
+  "fontDir": "samples/fonts",
+  "slideIndex": 0,
+  "placeholders": {
+    "title": {
+      "name": "Title",
+      "type": "text",
+      "isTitle": true,
+      "maxFontSize": 36,
+      "value": "NYCタクシー 月次乗車数の推移からの示唆"
+    },
+    "graphImage": {
+      "name": "GraphImage",
+      "type": "image",
+      "value": "samples/images/graph.png"
+    },
+    "insights": {
+      "name": "Insights",
+      "type": "list",
+      "maxFontSize": 28,
+      "value": [
+        "長期減少トレンド：パンデミック以前から右肩下がり、アプリ配車 (Uber/Lyft等) への需要シフトが背景",
+        "2020年春の急落と低位推移：外出制限・観光蒸発・在宅勤務定着で乗車数が急減後、低位で横ばい",
+        "季節性の弱まり：繁忙期の波が縮小、公共交通・マイクロモビリティ・配車プラットフォームへの分散が影響"
+      ]
+    },
+    "note": {
+      "name": "Note",
+      "type": "text",
+      "maxFontSize": 24,
+      "value": "参考：FHV利用件数、地下鉄/バス乗車数、観光統計、オフィス出社率など外部指標と併用すると因果関係の整理が可能。"
+    }
+  }
+}
+```
+
 ## How It Works
 
 1. **Load Template**: Opens the specified PowerPoint template file
-2. **Select Slide**: Navigates to the specified slide by index
-3. **Find Shapes**: Locates shapes by their exact name in the slide
-4. **Fill Content**:
+2. **Initialize Font System**: If `fontDir` is specified, builds a font name mapping cache for precise text measurement
+3. **Select Slide**: Navigates to the specified slide by index
+4. **Get Theme Fonts**: Extracts theme font information for resolving font references
+5. **Find Shapes**: Locates shapes by their exact name in the slide
+6. **Fill Content**:
    - **Text**: Clears existing content, sets new text, and auto-fits font size
    - **Image**: Calculates optimal size maintaining aspect ratio, centers within frame, and replaces original shape
-   - **List**: Creates paragraphs for each item, with bold labels separated by colons
-5. **Save Output**: Saves the modified presentation to the output path
+   - **List**: Resolves font from shape/theme, calculates optimal font size using Pillow for precise measurement, creates paragraphs for each item with bold labels separated by colons
+7. **Save Output**: Saves the modified presentation to the output path
+8. **Cleanup**: Clears font caches to free memory
 
 ## How to Name Shapes in PowerPoint
 
@@ -229,7 +304,48 @@ The `python-pptx` library has a significant limitation with text fitting: **it d
   - Long words or text without natural break points
 - **No font rendering engine**: Unlike PowerPoint itself, `python-pptx` cannot render text to measure exact dimensions.
 
-**Workarounds:**
+### Solution: Font Directory (`fontDir`)
+
+This tool now includes a **precise font size calculation** feature that addresses the above limitations:
+
+- **Specify `fontDir`**: Point to a directory containing TTF/TTC/OTF font files
+- **Pillow-based measurement**: Uses Pillow's FreeType integration for actual text width measurement
+- **fontTools integration**: Extracts font names from font files to match PowerPoint's font references
+- **Theme font resolution**: Automatically resolves theme font references (e.g., `+mj-ea`, `+mn-ea`) to actual font names
+
+**Important Constraint:** All text items within a single placeholder should use the **same language** (or languages covered by the same font). The tool uses one font per placeholder for text measurement.
+
+**Example (Japanese text):**
+
+```json
+{
+  "templatePptx": "template.pptx",
+  "fontDir": "samples/fonts",
+  "placeholders": {
+    "insights": {
+      "name": "Insights",
+      "type": "list",
+      "value": ["日本語テキスト1", "日本語テキスト2", "日本語テキスト3"]
+    }
+  }
+}
+```
+
+**Note:** Mixing different languages (e.g., Japanese, Chinese, Korean) in the same placeholder may result in incorrect text measurement if the selected font doesn't cover all characters.
+
+**Font Directory Setup:**
+
+1. Create a `fonts/` directory in your project
+2. Copy the required font files (TTF/TTC/OTF) to the directory
+3. Font names are automatically extracted from font metadata
+
+**Supported font file types:**
+
+- `.ttf` - TrueType Font
+- `.ttc` - TrueType Collection (multiple fonts in one file)
+- `.otf` - OpenType Font
+
+**Workarounds (when `fontDir` is not available):**
 
 1. **Use conservative `maxFontSize` values**: Set smaller maximum font sizes than you might expect to need
 2. **Test with your specific fonts**: Results vary significantly depending on which fonts are used in your template
@@ -238,6 +354,20 @@ The `python-pptx` library has a significant limitation with text fitting: **it d
 5. **Use standard fonts**: Fonts like Arial, Calibri, or Times New Roman tend to have more predictable behavior
 
 For more details, see the [python-pptx documentation on fit_text()](https://python-pptx.readthedocs.io/en/latest/api/text.html#pptx.text.text.TextFrame.fit_text).
+
+### Multi-Language Limitations
+
+The current implementation has the following constraints for multi-language support:
+
+| Feature                             | Status             | Notes                                           |
+| ----------------------------------- | ------------------ | ----------------------------------------------- |
+| Multiple paragraphs                 | ✅ Supported       | Each list item becomes a paragraph              |
+| Single language per placeholder     | ✅ Works well      | All items use the same font for measurement     |
+| Mixed CJK + Latin in same paragraph | ⚠️ Partial         | Uses primary font (typically East Asian)        |
+| Different languages per paragraph   | ❌ Not optimal     | Font measurement uses single font for all items |
+| Automatic language detection        | ❌ Not implemented | Font is determined from shape/theme settings    |
+
+**Best Practice:** Use separate placeholders for content in different languages, or ensure all text in a placeholder is covered by the template's configured font.
 
 ## License
 
